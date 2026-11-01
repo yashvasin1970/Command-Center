@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Command Center</title>
+<meta name="theme-color" content="#1c2e4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Command Center">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #f3f5f9; --panel: #ffffff; --fg: #15202f; --muted: #5d6b80; --line: #dde3ec;
+    --navy: #1c2e4a; --warn: #c97a12; --ok: #2f8a55;
+    --a0: #f08a4b; --a1: #569cd6; --a2: #4fae74; --a3: #e3b23c; --a4: #9b7fd4; --a5: #e2627a; --a6: #3aa6a6; --a7: #6b7a90;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0e1520; --panel: #172232; --fg: #e8edf4; --muted: #95a3b8; --line: #263449; --warn: #f0a640; --ok: #5cc287; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  .wrap { max-width: 44rem; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  header { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+  header h1 { font-size: 1.15rem; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  .back { display: inline-flex; align-items: center; gap: 2px; border: 0; background: none; color: var(--a1); font: inherit; font-size: 1rem; padding: 6px 4px 6px 0; cursor: pointer; }
+  .hero { background: var(--navy); color: #fff; border-radius: 18px; padding: 18px; margin: 10px 0 22px; }
+  .hero .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; opacity: .75; }
+  .hero .s { font-size: 1.25rem; font-weight: 650; margin: 4px 0 2px; }
+  .hero .d { opacity: .85; font-size: .92rem; }
+  .hero .big { font-size: 2.6rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .hero .row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px; }
+  @media (min-width: 560px) { .apps { grid-template-columns: repeat(6, 1fr); } }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: var(--fg); background: none; border: 0; font: inherit; cursor: pointer; padding: 0; }
+  .ico { position: relative; width: 62px; height: 62px; border-radius: 16px; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,.15); transition: transform .15s; }
+  .app:active .ico { transform: scale(.92); }
+  .ico svg { width: 30px; height: 30px; }
+  .app span.n { font-size: .74rem; font-weight: 500; text-align: center; }
+  .badge { position: absolute; top: -5px; right: -5px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #e5484d; color: #fff; font-size: .72rem; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--bg); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-top: 14px; }
+  .card h2 { font-size: 1rem; margin: 0 0 4px; }
+  .note { color: var(--muted); font-size: .82rem; margin: 0 0 10px; }
+  .seg { display: flex; background: var(--line); border-radius: 10px; padding: 3px; gap: 3px; margin: 12px 0 4px; }
+  .seg button { flex: 1; border: 0; background: none; color: var(--fg); font: inherit; font-size: .85rem; padding: 7px 4px; border-radius: 8px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--panel); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .tt { overflow-x: auto; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 0 8px; }
+  td { padding: 10px 8px; background: var(--bg); vertical-align: middle; }
+  td:first-child { border-radius: 10px 0 0 10px; } td:last-child { border-radius: 0 10px 10px 0; }
+  td .c { display: block; color: var(--muted); font-size: .75rem; }
+  tr.done td { opacity: .45; }
+  tr.next td { background: color-mix(in srgb, var(--warn) 16%, var(--panel)); }
+  .pill { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .p-done { color: var(--muted); border: 1px solid var(--line); }
+  .p-next { background: var(--warn); color: #fff; }
+  .p-up { color: var(--ok); border: 1px solid currentColor; }
+  .grid { font-size: .86rem; } .grid td { padding: 9px 6px; } .grid th { padding: 0 6px; } .grid td.cell { white-space: nowrap; text-align: center; } .grid th:not(:first-child) { text-align: center; }
+  .grid td.done { opacity: .45; text-decoration: line-through; }
+  .grid td.next { font-weight: 700; color: var(--warn); }
+  .foot { color: var(--muted); font-size: .75rem; margin-top: 18px; text-align: center; }
+  .install { display: none; margin-top: 18px; width: 100%; border: 0; border-radius: 12px; padding: 12px; font: inherit; font-weight: 600; background: var(--a1); color: #fff; cursor: pointer; }
+  .live { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin: -8px 0 22px; font-size: .85rem; }
+  .live .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+  .live .dot.on { background: var(--ok); } .live .dot.err { background: #e5484d; }
+  .live .lt { flex: 1; min-width: 10rem; color: var(--muted); }
+  .lbtn { border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; font-size: .82rem; font-weight: 600; padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+  .item { display: flex; gap: 10px; align-items: flex-start; padding: 11px 2px; border-top: 1px solid var(--line); text-decoration: none; color: var(--fg); }
+  .item:first-child { border-top: 0; }
+  .item .when { flex: none; width: 4.4rem; color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .item .body { flex: 1; min-width: 0; }
+  .item .t { font-weight: 550; font-size: .92rem; overflow-wrap: anywhere; }
+  .item .m { color: var(--muted); font-size: .76rem; margin-top: 2px; overflow-wrap: anywhere; }
+  .tag { display: inline-block; font-size: .68rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; margin-right: 6px; color: #fff; }
+  .tag.Hackathon { background: var(--a5); } .tag.Contest { background: var(--a3); } .tag.Internship { background: var(--a1); } .tag.Other { background: var(--a7); }
+  .tag.Exam { background: var(--a0); }
+  .empty { color: var(--muted); font-size: .88rem; padding: 8px 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HOME -->
+  <section id="v-home">
+    <header><h1>Command Center</h1></header>
+    <div class="hero" id="hero"></div>
+    <div class="live" id="live">
+      <span class="dot" id="live-dot"></span>
+      <span class="lt" id="live-text">Sign in to see your live inbox and calendar</span>
+      <button class="lbtn" id="signin">Sign in with Google</button>
+    </div>
+    <div class="apps">
+      <button class="app" data-go="exams"><span class="ico" style="background:var(--a0)"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 11h7M9 15h7M9 19h4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg><b class="badge" id="b-exams" hidden></b></span><span class="n">Exams</span></button>
+      <button class="app" data-go="grid"><span class="ico" style="background:var(--a4)"><svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M3.5 9h17M3.5 14.5h17M10 4v16" fill="none" stroke="#fff" stroke-width="1.8"/></svg></span><span class="n">Timetable</span></button>
+      <button class="app" data-go="inbox"><span class="ico" style="background:var(--a1)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M4 7l8 6 8-6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg><b class="badge" id="b-inbox" hidden></b></span><span class="n">Inbox</span></button>
+      <button class="app" data-go="calendar"><span class="ico" style="background:var(--a2)"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg><b class="badge" id="b-cal" hidden></b></span><span class="n">Calendar</span></button>
+      <a class="app" href="https://unstop.com/hackathons" target="_blank" rel="noopener"><span class="ico" style="background:var(--a5)"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 01-8 0V4z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4M12 13v4M9 20h6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="n">Hackathons</span></a>
+      <a class="app" href="https://atcoder.jp/contests/" target="_blank" rel="noopener"><span class="ico" style="background:var(--a3)"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="n">Contests</span></a>
+      <a class="app" href="https://leetcode.com/problemset/" target="_blank" rel="noopener"><span class="ico" style="background:var(--a6)"><svg viewBox="0 0 24 24"><path d="M14 4L7 11.5l7 7.5M10 12h10" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="n">LeetCode</span></a>
+      <a class="app" href="https://claude.ai/artifact/Cp4xBpb6H7gNjT4mEdm9An" target="_blank" rel="noopener"><span class="ico" style="background:var(--a7)"><svg viewBox="0 0 24 24"><path d="M5 19V11M10 19V6M15 19v-5M20 19V9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></span><span class="n">Live dashboard</span></a>
+    </div>
+    <button class="install" id="install">Install app</button>
+    <p class="foot">Exams work offline · Inbox and Calendar update live after you sign in · Exam data from the official Model Exam Time Table, odd semester 2026–27</p>
+  </section>
+
+  <!-- EXAMS LIST -->
+  <section id="v-exams" hidden>
+    <header><button class="back" data-go="home">‹ Home</button></header>
+    <h1 style="font-size:1.4rem;margin:4px 0 0">Exams</h1>
+    <div class="seg" role="group" aria-label="Exam round">
+      <button data-r="up" aria-pressed="true">Upcoming</button>
+      <button data-r="Model I" aria-pressed="false">Model I</button>
+      <button data-r="Model II" aria-pressed="false">Model II</button>
+      <button data-r="Model III" aria-pressed="false">Model III</button>
+    </div>
+    <div class="card">
+      <p class="note" id="syl"></p>
+      <table><thead><tr><th>Date</th><th>Subject</th><th>Status</th></tr></thead><tbody id="ex-rows"></tbody></table>
+    </div>
+  </section>
+
+  <!-- TIMETABLE GRID -->
+  <section id="v-grid" hidden>
+    <header><button class="back" data-go="home">‹ Home</button></header>
+    <h1 style="font-size:1.4rem;margin:4px 0 0">Timetable</h1>
+    <div class="card">
+      <p class="note">U.G. Semester I · CSE (AI &amp; ML) · 7:50 – 11:00 AM unless shown</p>
+      <div class="tt"><table class="grid"><thead><tr><th>Subject</th><th>Model I</th><th>Model II</th><th>Model III</th></tr></thead><tbody id="grid-rows"></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Syllabus</h2>
+      <p class="note" style="margin:0">Model I: Units I–III · Model II: Units IV–V · Model III: all 5 units. Attendance carries weightage.</p>
+    </div>
+  </section>
+
+  <!-- INBOX (live) -->
+  <section id="v-inbox" hidden>
+    <header><button class="back" data-go="home">‹ Home</button></header>
+    <h1 style="font-size:1.4rem;margin:4px 0 0">Inbox</h1>
+    <div class="seg" role="group" aria-label="Type">
+      <button data-k="" aria-pressed="true">All</button>
+      <button data-k="Hackathon" aria-pressed="false">Hackathons</button>
+      <button data-k="Contest" aria-pressed="false">Contests</button>
+      <button data-k="Internship" aria-pressed="false">Internships</button>
+    </div>
+    <div class="card">
+      <p class="note" id="inbox-note">Hackathon, contest and internship emails from the last 30 days. Tap one to open it in Gmail.</p>
+      <div id="inbox-list"></div>
+    </div>
+  </section>
+
+  <!-- CALENDAR (live) -->
+  <section id="v-calendar" hidden>
+    <header><button class="back" data-go="home">‹ Home</button></header>
+    <h1 style="font-size:1.4rem;margin:4px 0 0">Calendar</h1>
+    <div class="card">
+      <p class="note" id="cal-note">Your Google Calendar, next 14 days.</p>
+      <div id="cal-list"></div>
+      <p class="note" style="margin:12px 0 0"><a href="https://calendar.google.com/calendar/r/week" target="_blank" rel="noopener" style="color:var(--a1)">Open Google Calendar ›</a></p>
+    </div>
+  </section>
+
+</div>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script>
+const S = '7:50 – 11:00 AM';
+const SUBJ = [
+  ['Matrices and Calculus', 'MA25C01'], ['Professional English I', 'EN25C09'], ['Applied Physics', 'PH25C06'],
+  ['Fundamentals of IoT', 'EC25C01'], ['Programming in C', 'CS25C01'], ['AI and Computational Thinking', 'CS25C03']
+];
+const DATES = {
+  'Model I': ['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31'],
+  'Model II': ['2026-11-30', '2026-12-01', '2026-12-02', '2026-12-03', '2026-12-04', '2026-12-05'],
+  'Model III': ['2026-12-14', '2026-12-15', '2026-12-16', '2026-12-17', '2026-12-18', '2026-12-19']
+};
+const EXAMS = [];
+for (const r in DATES) DATES[r].forEach((d, i) => EXAMS.push({ round: r, date: d, subject: SUBJ[i][0], code: SUBJ[i][1], time: S }));
+EXAMS.push({ round: 'Model III', date: '2026-11-27', subject: 'Heritage of Tamils', code: 'GE25C01', time: '12:00 – 3:00 PM' });
+EXAMS.sort((a, b) => a.date.localeCompare(b.date));
+const SYL = { 'Model I': 'Units I–III', 'Model II': 'Units IV–V', 'Model III': 'All 5 units' };
+
+const today = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const days = (iso) => Math.round((new Date(iso + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5);
+const fmt = (iso, o = { weekday: 'short', day: 'numeric', month: 'short' }) => new Date(iso + 'T00:00:00').toLocaleDateString('en-IN', o);
+const next = () => EXAMS.find((e) => e.date >= today());
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+function hero() {
+  const h = document.getElementById('hero'); h.replaceChildren();
+  const n = next();
+  if (!n) { h.append(el('div', 'k', 'Exams'), el('div', 's', 'All model exams done')); return; }
+  const dd = days(n.date);
+  const row = el('div', 'row'); const left = el('div');
+  left.append(el('div', 'k', 'Next exam · ' + n.round), el('div', 's', n.subject), el('div', 'd', fmt(n.date, { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + n.time));
+  const right = el('div'); right.style.textAlign = 'right';
+  right.append(el('div', 'big', dd === 0 ? 'Today' : String(dd)), el('div', 'd', dd === 0 ? '' : dd === 1 ? 'day left' : 'days left'));
+  row.append(left, right); h.append(row);
+  const up = EXAMS.filter((e) => e.date >= today() && days(e.date) <= 7).length;
+  const b = document.getElementById('b-exams'); b.hidden = !up; b.textContent = up;
+}
+
+let round = 'up';
+function exams() {
+  document.querySelectorAll('#v-exams .seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.r === round)));
+  const t = today(), n = next();
+  const list = round === 'up' ? EXAMS.filter((e) => e.date >= t) : EXAMS.filter((e) => e.round === round);
+  document.getElementById('syl').textContent = round === 'up' ? 'Every exam still to come, soonest first.' : round + ' syllabus: ' + SYL[round] + '.';
+  const tb = document.getElementById('ex-rows'); tb.replaceChildren();
+  list.forEach((e) => {
+    const isNext = n && e === n, done = e.date < t;
+    const tr = el('tr', done ? 'done' : isNext ? 'next' : '');
+    const d = el('td', null, fmt(e.date)); d.append(el('span', 'c', e.time));
+    const s = el('td', null, e.subject); s.append(el('span', 'c', e.code + (round === 'up' ? ' · ' + e.round : '')));
+    const st = el('td'); const dd = days(e.date);
+    st.append(el('span', 'pill ' + (done ? 'p-done' : isNext ? 'p-next' : 'p-up'), done ? 'Done' : dd === 0 ? 'Today' : dd === 1 ? 'Tomorrow' : 'In ' + dd + 'd'));
+    tr.append(d, s, st); tb.append(tr);
+  });
+  if (!list.length) { const tr = el('tr'); const td = el('td', null, 'Nothing left in this list.'); td.colSpan = 3; tr.append(td); tb.append(tr); }
+}
+
+function grid() {
+  const t = today(), n = next(), tb = document.getElementById('grid-rows'); tb.replaceChildren();
+  [...SUBJ, ['Heritage of Tamils', 'GE25C01']].forEach(([name, code]) => {
+    const tr = el('tr'); const s = el('td', null, name); s.append(el('span', 'c', code)); tr.append(s);
+    ['Model I', 'Model II', 'Model III'].forEach((r) => {
+      const e = EXAMS.find((x) => x.subject === name && x.round === r);
+      const td = el('td', 'cell' + (e ? (e.date < t ? ' done' : n === e ? ' next' : '') : ''), e ? fmt(e.date, { day: 'numeric', month: 'short' }) : '—');
+      if (e && e.time !== S) td.append(el('span', 'c', e.time));
+      tr.append(td);
+    });
+    tb.append(tr);
+  });
+}
+
+function show() {
+  const v = (location.hash.slice(1) || 'home');
+  const view = ['home', 'exams', 'grid', 'inbox', 'calendar'].includes(v) ? v : 'home';
+  document.querySelectorAll('section').forEach((s) => { s.hidden = s.id !== 'v-' + view; });
+  hero(); exams(); grid(); renderInbox(); renderCal(); window.scrollTo(0, 0);
+}
+document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { location.hash = b.dataset.go === 'home' ? '' : b.dataset.go; if (b.dataset.go === 'home') show(); }));
+document.querySelectorAll('#v-exams .seg button').forEach((b) => b.addEventListener('click', () => { round = b.dataset.r; exams(); }));
+window.addEventListener('hashchange', show);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) show(); });
+
+
+// ---------- Live Google data ----------
+const CLIENT_ID = '47190317267-3a3hl82f4qbpo8of0fpldm4qqg4u1roi.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly';
+const GMAIL_Q = 'newer_than:30d (hackathon OR contest OR internship OR from:unstop.com OR from:unstop.news OR from:unstop.events OR from:devfolio.co OR from:atcoder.jp OR from:codechef.com OR from:leetcode.com OR from:hackerearth.com OR from:mlh.io OR from:spaceappschallenge.org)';
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+let token = store.get('cc-token');
+let live = store.get('cc-live') || { inbox: null, cal: null, at: null };
+let kindFilter = '';
+let tokenClient = null, loading = false;
+
+const tokenValid = () => token && token.exp > Date.now() + 60e3;
+function classify(subject, from) {
+  const s = (subject + ' ' + from).toLowerCase();
+  if (/hackathon|space ?apps|spaceappschallenge|devfolio|mlh\.io/.test(s)) return 'Hackathon';
+  if (/contest|atcoder|leetcode|codechef|codeforces/.test(s)) return 'Contest';
+  if (/intern|stipend|ppi|role|opening|job/.test(subject.toLowerCase())) return 'Internship';
+  return 'Other';
+}
+const ago = (ms) => { const m = Math.round((Date.now() - ms) / 6e4); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
+
+function setStatus(state, text) {
+  document.getElementById('live-dot').className = 'dot' + (state === 'on' ? ' on' : state === 'err' ? ' err' : '');
+  document.getElementById('live-text').textContent = text;
+  const b = document.getElementById('signin');
+  b.textContent = state === 'on' || state === 'busy' ? 'Refresh' : 'Sign in with Google';
+  b.disabled = state === 'busy';
+}
+function statusFromCache() {
+  if (loading) return;
+  if (tokenValid()) setStatus('on', live.at ? 'Live · updated ' + ago(live.at) : 'Signed in');
+  else if (live.at) setStatus('off', 'Showing data from ' + ago(live.at) + ' · sign in to update');
+  else setStatus('off', 'Sign in to see your live inbox and calendar');
+}
+
+async function api(url) {
+  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token.access } });
+  if (r.status === 401) { token = null; store.set('cc-token', null); throw new Error('Your Google sign-in expired. Tap Sign in again.'); }
+  if (!r.ok) { let msg = r.status + ''; try { msg = (await r.json()).error.message; } catch (e) {} throw new Error(msg); }
+  return r.json();
+}
+async function loadLive() {
+  if (!tokenValid() || loading) return;
+  loading = true; setStatus('busy', 'Updating…');
+  try {
+    const list = await api('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=30&q=' + encodeURIComponent(GMAIL_Q));
+    const ids = (list.messages || []).map((m) => m.id);
+    const msgs = await Promise.all(ids.map((id) => api('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + id + '?format=metadata&metadataHeaders=Subject&metadataHeaders=From').catch(() => null)));
+    const inbox = msgs.filter(Boolean).map((m) => {
+      const h = (n) => ((m.payload && m.payload.headers) || []).find((x) => x.name.toLowerCase() === n) || {};
+      const subject = h('subject').value || '(no subject)', from = h('from').value || '';
+      const fromName = from.replace(/<.*>/, '').replace(/"/g, '').trim() || from;
+      return { id: m.threadId, at: Number(m.internalDate), subject, from: fromName, kind: classify(subject, from) };
+    }).sort((a, b) => b.at - a.at);
+    const now = new Date(), end = new Date(now.getTime() + 14 * 864e5);
+    const ev = await api('https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&maxResults=30&timeMin=' + encodeURIComponent(now.toISOString()) + '&timeMax=' + encodeURIComponent(end.toISOString()));
+    const cal = (ev.items || []).map((e) => ({ title: e.summary || '(untitled)', start: (e.start && (e.start.dateTime || e.start.date)) || '', allDay: !!(e.start && e.start.date && !e.start.dateTime), location: e.location || '', link: e.htmlLink || '' }));
+    live = { inbox, cal, at: Date.now() }; store.set('cc-live', live);
+    setStatus('on', 'Live · updated just now');
+  } catch (e) {
+    setStatus('err', 'Couldn’t update: ' + e.message);
+  } finally { loading = false; renderInbox(); renderCal(); badges(); }
+}
+function signIn() {
+  if (tokenValid()) return loadLive();
+  if (!navigator.onLine) return setStatus('err', 'You’re offline. Connect to sign in.');
+  if (!window.google || !google.accounts) return setStatus('err', 'Google sign-in is still loading. Try again in a moment.');
+  if (!tokenClient) tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID, scope: SCOPES, prompt: '',
+    callback: (r) => {
+      if (r.error) return setStatus('err', 'Sign-in didn’t finish: ' + (r.error_description || r.error));
+      token = { access: r.access_token, exp: Date.now() + Number(r.expires_in || 3600) * 1000 };
+      store.set('cc-token', token); loadLive();
+    },
+    error_callback: (e) => setStatus('err', e && e.type === 'popup_closed' ? 'Sign-in window was closed.' : 'Sign-in was blocked. Allow pop-ups and try again.')
+  });
+  tokenClient.requestAccessToken();
+}
+document.getElementById('signin').addEventListener('click', signIn);
+
+function badges() {
+  const bi = document.getElementById('b-inbox'), bc = document.getElementById('b-cal');
+  const fresh = (live.inbox || []).filter((m) => Date.now() - m.at < 7 * 864e5 && m.kind !== 'Other').length;
+  bi.hidden = !fresh; bi.textContent = fresh;
+  const wk = (live.cal || []).filter((e) => new Date(e.start) - Date.now() < 7 * 864e5).length;
+  bc.hidden = !wk; bc.textContent = wk;
+}
+function renderInbox() {
+  document.querySelectorAll('#v-inbox .seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === kindFilter)));
+  const box = document.getElementById('inbox-list'); box.replaceChildren();
+  if (!live.inbox) { box.append(el('p', 'empty', 'Sign in on the home screen to load your emails.')); return; }
+  const rows = live.inbox.filter((m) => !kindFilter || m.kind === kindFilter);
+  if (!rows.length) { box.append(el('p', 'empty', 'Nothing of this type in the last 30 days.')); return; }
+  rows.forEach((m) => {
+    const a = el('a', 'item'); a.href = 'https://mail.google.com/mail/u/0/#all/' + m.id; a.target = '_blank'; a.rel = 'noopener';
+    const w = el('div', 'when', new Date(m.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }));
+    const b = el('div', 'body'); const t = el('div', 't'); t.append(el('span', 'tag ' + m.kind, m.kind), document.createTextNode(m.subject));
+    b.append(t, el('div', 'm', m.from)); a.append(w, b); box.append(a);
+  });
+}
+function renderCal() {
+  const box = document.getElementById('cal-list'); box.replaceChildren();
+  if (!live.cal) { box.append(el('p', 'empty', 'Sign in on the home screen to load your calendar.')); return; }
+  if (!live.cal.length) { box.append(el('p', 'empty', 'Nothing on your calendar in the next 14 days.')); return; }
+  live.cal.forEach((e) => {
+    const a = el(e.link ? 'a' : 'div', 'item'); if (e.link) { a.href = e.link; a.target = '_blank'; a.rel = 'noopener'; }
+    const d = new Date(e.allDay ? e.start + 'T00:00:00' : e.start);
+    const w = el('div', 'when', d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }));
+    const b = el('div', 'body'); const t = el('div', 't');
+    if (/exam/i.test(e.title)) t.append(el('span', 'tag Exam', 'Exam'));
+    t.append(document.createTextNode(e.title));
+    b.append(t, el('div', 'm', (e.allDay ? 'All day' : d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })) + (e.location ? ' · ' + e.location : '')));
+    a.append(w, b); box.append(a);
+  });
+}
+document.querySelectorAll('#v-inbox .seg button').forEach((b) => b.addEventListener('click', () => { kindFilter = b.dataset.k; renderInbox(); }));
+show(); statusFromCache(); badges();
+if (tokenValid()) loadLive();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { statusFromCache(); if (tokenValid() && (!live.at || Date.now() - live.at > 5 * 6e4)) loadLive(); } });
+
+// Install prompt (Android/Chrome)
+let deferred;
+const ib = document.getElementById('install');
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; ib.style.display = 'block'; });
+ib.addEventListener('click', async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; ib.style.display = 'none'; });
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
